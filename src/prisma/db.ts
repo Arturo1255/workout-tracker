@@ -7,3 +7,14 @@ export const db = postgres<Contract>({
   contractJson,
   url: process.env['DATABASE_URL']!,
 });
+
+let isConnected = false;
+
+
+export async function ensureDbConnected() {
+  if (!isConnected) {
+    console.log("DATABASE_URL is:", process.env['DATABASE_URL']);
+    await db.connect({ url: process.env['DATABASE_URL']! });
+    isConnected = true;
+  }
+}
