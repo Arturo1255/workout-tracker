@@ -13,7 +13,7 @@ const handler = NextAuth({
           password: { label: "Password", type: "password" },
         },
         async authorize(credentials) {
-          // your logic goes here
+          
           if (!credentials?.username || !credentials.password){
             return null;
           }
