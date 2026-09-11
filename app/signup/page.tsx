@@ -23,7 +23,7 @@ export default function SignUpForm(){
         console.log(data);
         if (response.ok) {
             setStatusMessage("Account created!");
-            setUser({ username: "", password: "", name: "", email: "" })
+            setUser({ username: "", password: "", name: "", email: "" });
           } else {
             setStatusMessage(data.error || "Something went wrong");
           }
