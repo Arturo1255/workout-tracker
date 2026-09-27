@@ -3,7 +3,24 @@ import { NextResponse } from "next/server";
 import {getServerSession} from "next-auth";
 import { Temporal } from '@js-temporal/polyfill';
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { isPR } from "@/lib/prDetection";
 
+
+type WorkoutSet = {
+    id: number
+    exerciseId: number;
+    reps: number;
+    weight: number;
+    setNumber: number;
+  };
+
+type Workout = {
+    id: number;
+    userId: number;
+    date: string;
+    notes: string | null;
+    sets: Array<WorkoutSet>
+};
 
 export async function GET() {
     const session = await getServerSession(authOptions);
@@ -28,7 +45,7 @@ export async function POST(request:Request) {
     await ensureDbConnected();
     const body = await request.json();
 
-    type WorkoutSet = {
+    type IncommingSet = {
         exerciseId: number;
         reps: number;
         weight: number;
@@ -44,7 +61,7 @@ export async function POST(request:Request) {
     }
     
     const dateInstant = Temporal.Instant.from(new Date(body.date).toISOString());
-    const parsedSets: WorkoutSet[] = [];
+    const parsedSets: IncommingSet[] = [];
 
     for (const set of sets){
         const exerciseId = set.exerciseId;
@@ -64,17 +81,24 @@ export async function POST(request:Request) {
         });
     }
 
+    const prFlags:boolean[] = [];
+    const exsistingWorkouts = await db.orm.public.Workout.where({userId: parseInt(session.user.id)}).include("sets").all() as unknown as Workout[];
+
+    parsedSets.forEach((set) =>{
+        prFlags.push(isPR(exsistingWorkouts, set.exerciseId, set.weight))
+    })
+
     try{
         const workout = await db.orm.public.Workout.create(
             {
                 userId: parseInt(session.user.id),
                 date: dateInstant,
                 notes: notes,
-                sets: (sets) => sets.create(parsedSets)
+                sets: (sets) => sets.create(parsedSets),
             }
         );
 
-        return NextResponse.json(workout, {status:201});
+        return NextResponse.json({...workout, "prFlags": prFlags}, {status:201});
     }catch (error){
         console.error(error);
         return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
