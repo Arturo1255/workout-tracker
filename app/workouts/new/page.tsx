@@ -39,7 +39,14 @@ export default function NewWorkout(){
         const data = await response.json();
         console.log(data);
         if (response.ok) {
-            setStatusMessage("Workout saved!");
+            const newPr = data.prFlags.some((flag: boolean) => flag === true);
+            
+            if (newPr){
+                setStatusMessage("Workout saved! New PR Set!")
+            }else{
+                setStatusMessage("Workout saved!");
+            }
+
             setDate("");
             setNotes("");
             setSets([]);
